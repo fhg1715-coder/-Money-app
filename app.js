@@ -42,25 +42,23 @@ async function cloudSave() {
 }
 
 async function cloudLoad() {
-  if (!firebaseUrl || !syncPin) return;
+  if (!firebaseUrl || !syncPin) return false;
   try {
     const res = await fetch(`${firebaseUrl}/backups/${syncPin}.json`);
     const data = await res.json();
-    if (!data || !data.accounts) return;
-    const localSaved = localStorage.getItem('last-saved') || '0';
-    if (data.savedAt > localSaved || accounts.length === 0) {
-      accounts = data.accounts || [];
-      cards    = data.cards    || [];
-      records  = data.records  || [];
-      goal     = parseInt(data.goal) || 100000;
-      DB.set('accounts', accounts);
-      DB.set('cards', cards);
-      DB.set('records', records);
-      localStorage.setItem('goal', goal);
-      localStorage.setItem('last-saved', data.savedAt);
-    }
+    if (!data || !data.accounts) return false;
+    accounts = data.accounts || [];
+    cards    = data.cards    || [];
+    records  = data.records  || [];
+    goal     = parseInt(data.goal) || 100000;
+    DB.set('accounts', accounts);
+    DB.set('cards', cards);
+    DB.set('records', records);
+    localStorage.setItem('goal', goal);
+    localStorage.setItem('last-saved', data.savedAt);
     updateSyncStatus('✅ 已同步');
-  } catch(e) {}
+    return true;
+  } catch(e) { return false; }
 }
 
 function updateSyncStatus(msg) {
@@ -672,6 +670,26 @@ document.getElementById('cloud-save-btn').addEventListener('click', async () => 
   localStorage.setItem('sync-pin', syncPin);
   await cloudSave();
   alert('✅ 設定完成！資料已同步到雲端');
+});
+
+document.getElementById('cloud-load-btn').addEventListener('click', async () => {
+  const url = document.getElementById('firebase-url-input').value.trim().replace(/\/$/, '');
+  const pin = document.getElementById('sync-pin-input').value.trim();
+  if (!url || pin.length < 4) {
+    alert('請填入資料庫網址和至少 4 位的 PIN');
+    return;
+  }
+  firebaseUrl = url;
+  syncPin = pin;
+  localStorage.setItem('firebase-url', firebaseUrl);
+  localStorage.setItem('sync-pin', syncPin);
+  const ok = await cloudLoad();
+  if (!ok) {
+    alert('❌ 找不到備份，請確認網址和 PIN 是否正確');
+  } else {
+    alert('✅ 資料已從雲端還原！');
+    location.reload();
+  }
 });
 
 document.getElementById('goal-save-btn').addEventListener('click', () => {
