@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="資產管理">
+  <title>資產管理</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- ══ Page: Home ══ -->
+  <div id="page-home" class="page">
+    <div class="topbar">
+      <h1>總覽</h1>
+      <button id="settings-btn" style="background:var(--bg);color:var(--text);font-size:18px;">⚙️</button>
+    </div>
+
+    <div id="home-reminders"></div>
+
+    <div class="card">
+      <div class="card-label">本月總資產</div>
+      <div class="card-value large" id="home-total">—</div>
+      <div class="chip-row" id="home-chips"></div>
+      <div id="home-goal"></div>
+    </div>
+
+    <div class="card" style="padding:12px 20px">
+      <div class="chart-wrap">
+        <canvas id="home-chart"></canvas>
+      </div>
+    </div>
+
+    <div style="padding: 0 16px">
+      <button class="btn btn-primary" id="home-record-btn">記錄本月資產</button>
+    </div>
+  </div>
+
+  <!-- ══ Page: Accounts ══ -->
+  <div id="page-accounts" class="page">
+    <div class="topbar">
+      <h1>帳戶</h1>
+      <button id="account-add-btn">+</button>
+    </div>
+    <div class="card">
+      <div class="card-label">帳戶總額（最新記錄）</div>
+      <div class="card-value" id="accounts-total">—</div>
+    </div>
+    <div id="accounts-list"></div>
+  </div>
+
+  <!-- ══ Page: Cards ══ -->
+  <div id="page-cards" class="page">
+    <div class="topbar">
+      <h1>信用卡</h1>
+      <button id="card-add-btn">+</button>
+    </div>
+    <div id="cards-list"></div>
+  </div>
+
+  <!-- ══ Page: History ══ -->
+  <div id="page-history" class="page">
+    <div class="topbar">
+      <h1>歷史記錄</h1>
+    </div>
+    <div id="history-list"></div>
+  </div>
+
+  <!-- ══ Bottom Nav ══ -->
+  <nav id="bottom-nav">
+    <button class="nav-item active" data-page="page-home">
+      <span class="nav-icon">◎</span>
+      總覽
+    </button>
+    <button class="nav-item" data-page="page-accounts">
+      <span class="nav-icon">🏦</span>
+      帳戶
+    </button>
+    <button class="nav-item" data-page="page-cards">
+      <span class="nav-icon">💳</span>
+      信用卡
+    </button>
+    <button class="nav-item" data-page="page-history">
+      <span class="nav-icon">📊</span>
+      記錄
+    </button>
+  </nav>
+
+  <!-- ══ Sheet: Record ══ -->
+  <div id="sheet-record" class="sheet-overlay">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <h2 id="record-title">記錄本月資產</h2>
+      <div id="record-inputs"></div>
+      <div class="form-group">
+        <label class="form-label">備註（選填）</label>
+        <textarea id="record-note" class="form-input" rows="2"
+          placeholder="例：這個月買了電腦所以比較少"
+          style="resize:none;line-height:1.5"></textarea>
+      </div>
+      <button class="btn btn-primary" id="record-save-btn">儲存</button>
+      <button class="btn btn-cancel" id="record-cancel-btn">取消</button>
+    </div>
+  </div>
+
+  <!-- ══ Sheet: Account ══ -->
+  <div id="sheet-account" class="sheet-overlay">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <h2 id="account-sheet-title">新增帳戶</h2>
+      <div class="form-group">
+        <label class="form-label">帳戶名稱</label>
+        <input id="account-name-input" class="form-input" type="text" placeholder="例：台灣銀行">
+      </div>
+      <div class="form-group">
+        <label class="form-label">帳戶類型</label>
+        <select id="account-type-select" class="form-select">
+          <option value="checking">薪轉帳戶</option>
+          <option value="savings">存款帳戶</option>
+          <option value="investment">證券帳戶</option>
+          <option value="cash">現金</option>
+          <option value="other">其他</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" id="account-save-btn">儲存</button>
+      <button class="btn btn-danger" id="account-delete-btn" style="display:none;margin-bottom:10px">刪除帳戶</button>
+      <button class="btn btn-cancel" id="account-cancel-btn">取消</button>
+    </div>
+  </div>
+
+  <!-- ══ Sheet: Card ══ -->
+  <div id="sheet-card" class="sheet-overlay">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <h2 id="card-sheet-title">新增信用卡</h2>
+      <div class="form-group">
+        <label class="form-label">信用卡名稱</label>
+        <input id="card-name-input" class="form-input" type="text" placeholder="例：國泰世華 Cube">
+      </div>
+      <div class="form-group">
+        <label class="form-label">帳單結算日（每月幾號）</label>
+        <input id="card-billing-input" class="form-input" type="number" inputmode="numeric" placeholder="例：15" min="1" max="31">
+      </div>
+      <div class="form-group">
+        <label class="form-label">繳費截止日（每月幾號）</label>
+        <input id="card-due-input" class="form-input" type="number" inputmode="numeric" placeholder="例：4" min="1" max="31">
+      </div>
+      <button class="btn btn-primary" id="card-save-btn">儲存</button>
+      <button class="btn btn-danger" id="card-delete-btn" style="display:none;margin-bottom:10px">刪除信用卡</button>
+      <button class="btn btn-cancel" id="card-cancel-btn">取消</button>
+    </div>
+  </div>
+
+  <!-- ══ Sheet: Settings ══ -->
+  <div id="sheet-settings" class="sheet-overlay">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <h2>設定</h2>
+      <div id="sync-status" style="text-align:center;font-size:13px;color:#30d158;min-height:18px;margin-bottom:4px"></div>
+
+      <div class="section-title" style="padding:0 0 8px">☁️ 雲端自動備份</div>
+      <div class="form-group">
+        <label class="form-label">Firebase 資料庫網址</label>
+        <input id="firebase-url-input" class="form-input" type="url"
+          placeholder="https://xxx-rtdb.firebaseio.com">
+      </div>
+      <div class="form-group">
+        <label class="form-label">備份 PIN（記住這組，換手機時用）</label>
+        <input id="sync-pin-input" class="form-input" type="text"
+          placeholder="設定 4 位以上的密碼">
+      </div>
+      <button class="btn btn-primary" id="cloud-save-btn" style="margin-bottom:16px">儲存雲端設定</button>
+
+      <div class="section-title" style="padding:8px 0">⚙️ 其他設定</div>
+      <div class="form-group">
+        <label class="form-label">資產目標（NT$）</label>
+        <input id="goal-input" class="form-input" type="number" inputmode="numeric">
+      </div>
+      <button class="btn btn-primary" id="goal-save-btn" style="margin-bottom:16px">儲存目標</button>
+      <button class="btn btn-cancel" id="export-btn" style="margin-bottom:10px">📤 手動匯出備份</button>
+      <label class="btn btn-cancel" style="display:block;text-align:center;cursor:pointer;margin-bottom:0" id="import-label">
+        📥 匯入備份
+        <input type="file" id="import-input" accept=".json" style="display:none">
+      </label>
+    </div>
+  </div>
+
+  <!-- ══ Sheet: History Detail ══ -->
+  <div id="sheet-history-detail" class="sheet-overlay">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <h2 id="history-detail-title"></h2>
+      <div id="history-detail-body"></div>
+      <button class="btn btn-cancel" id="history-detail-close" style="margin-top:16px">關閉</button>
+    </div>
+  </div>
+
+</div>
+<script src="app.js"></script>
+</body>
+</html>

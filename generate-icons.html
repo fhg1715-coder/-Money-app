@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <title>產生圖示</title>
+  <style>
+    body { font-family: -apple-system, sans-serif; display: flex; flex-direction: column;
+           align-items: center; justify-content: center; min-height: 100vh;
+           background: #f5f5f7; margin: 0; gap: 24px; }
+    h2 { color: #1d1d1f; margin: 0; }
+    p  { color: #86868b; margin: 0; font-size: 15px; }
+    canvas { border-radius: 22%; box-shadow: 0 4px 20px rgba(0,0,0,0.15); }
+    button { padding: 14px 32px; background: #0071e3; color: #fff;
+             border: none; border-radius: 12px; font-size: 16px;
+             font-weight: 600; cursor: pointer; }
+    button:hover { background: #0077ed; }
+  </style>
+</head>
+<body>
+  <h2>資產管理 App 圖示</h2>
+  <canvas id="preview" width="200" height="200"></canvas>
+  <p>點下方按鈕下載圖示，再依照說明放入資料夾</p>
+  <button onclick="downloadIcons()">📥 下載圖示</button>
+
+  <script>
+    function drawIcon(size) {
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      const r = size * 0.22; // rounded corner radius
+
+      // 鵝黃色背景
+      ctx.beginPath();
+      ctx.moveTo(r, 0);
+      ctx.lineTo(size - r, 0);
+      ctx.quadraticCurveTo(size, 0, size, r);
+      ctx.lineTo(size, size - r);
+      ctx.quadraticCurveTo(size, size, size - r, size);
+      ctx.lineTo(r, size);
+      ctx.quadraticCurveTo(0, size, 0, size - r);
+      ctx.lineTo(0, r);
+      ctx.quadraticCurveTo(0, 0, r, 0);
+      ctx.closePath();
+
+      const grad = ctx.createLinearGradient(0, 0, size, size);
+      grad.addColorStop(0, '#FFE97A');
+      grad.addColorStop(1, '#FFD740');
+      ctx.fillStyle = grad;
+      ctx.fill();
+
+      // $ 符號
+      ctx.fillStyle = '#7A5C00';
+      ctx.font = `bold ${size * 0.52}px -apple-system, "Helvetica Neue", Arial`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('$', size / 2, size / 2 + size * 0.02);
+
+      return canvas;
+    }
+
+    // 預覽
+    const preview = document.getElementById('preview');
+    const pCtx = preview.getContext('2d');
+    const previewCanvas = drawIcon(200);
+    pCtx.drawImage(previewCanvas, 0, 0);
+
+    function downloadIcons() {
+      [192, 512].forEach(size => {
+        const canvas = drawIcon(size);
+        const a = document.createElement('a');
+        a.href = canvas.toDataURL('image/png');
+        a.download = `icon-${size}.png`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      });
+      alert('✅ 下載完成！\n\n請把兩張圖片放到「資產管理」資料夾裡的「icons」資料夾中，再重新上傳 Netlify。');
+    }
+  </script>
+</body>
+</html>
