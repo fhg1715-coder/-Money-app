@@ -1,4 +1,4 @@
-const CACHE_NAME = 'asset-manager-v10';
+const CACHE_NAME = 'asset-manager-v11';
 const ASSETS = ['/', '/index.html', '/styles.css', '/app.js', '/manifest.json'];
 
 self.addEventListener('install', e => {
