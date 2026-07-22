@@ -101,9 +101,15 @@ function formatAmount(n) {
 }
 
 function accountTypeLabel(t) {
-  const map = { savings: '存款帳戶', checking: '薪轉帳戶', investment: '證券帳戶', cash: '現金', other: '其他' };
+  const map = { savings: '存款帳戶', checking: '薪轉帳戶', investment: '證券帳戶', stock: '股票', cash: '現金', other: '其他' };
   return map[t] || t;
 }
+
+// 是否為投資型帳戶（有市值／股數／成本／損益）
+function isInvestType(t) { return t === 'investment' || t === 'stock'; }
+
+// 本月結餘 = 資產總額 − 已登錄信用卡費
+function recordNet(r) { return r.total - (r.totalCardFees || 0); }
 
 function thisYearMonth() {
   const d = new Date();
@@ -125,7 +131,8 @@ function renderHome() {
 
   const goalEl = document.getElementById('home-goal');
   if (latest) {
-    totalEl.textContent = `NT$ ${formatAmount(latest.total)}`;
+    const net = recordNet(latest);
+    totalEl.textContent = `NT$ ${formatAmount(net)}`;
     let chipsHtml = accounts.map(a => {
       const val = latest.balances[a.id] ?? 0;
       return `<div class="chip">${a.name} <span>${formatAmount(val)}</span></div>`;
@@ -136,10 +143,10 @@ function renderHome() {
     chipRow.innerHTML = chipsHtml;
     recordBtn.textContent = '更新本月記錄';
 
-    // 進度條
-    const pct = Math.min((latest.total / goal) * 100, 100).toFixed(1);
-    const done = latest.total >= goal;
-    const remaining = goal - latest.total;
+    // 進度條（以結餘計算）
+    const pct = Math.min((net / goal) * 100, 100).toFixed(1);
+    const done = net >= goal;
+    const remaining = goal - net;
     goalEl.innerHTML = `
       <div class="progress-wrap">
         <div class="progress-meta">
@@ -189,10 +196,10 @@ function openRecordSheet() {
       <div class="form-group">
         <label class="form-label">${a.name}（${accountTypeLabel(a.type)}）</label>
         <input class="form-input" type="number" inputmode="numeric"
-          placeholder="${a.type === 'investment' ? '目前市值' : '帳戶餘額'}"
+          placeholder="${isInvestType(a.type) ? '目前市值' : '帳戶餘額'}"
           data-account-id="${a.id}"
           value="${existing ? (existing.balances[a.id] ?? '') : ''}">
-        ${a.type === 'investment' ? `
+        ${isInvestType(a.type) ? `
         <input class="form-input" type="number" inputmode="numeric" placeholder="持有股數（選填）"
           style="margin-top:6px;background:#f0f4ff;border-color:#c7d7ff"
           data-shares-id="${a.id}"
@@ -267,7 +274,7 @@ function renderMiniChart() {
     const [, m] = r.ym.split('-');
     return `${parseInt(m)}月`;
   });
-  const data = sorted.map(r => r.total);
+  const data = sorted.map(r => recordNet(r));
 
   const dpr = window.devicePixelRatio || 1;
   const W = wrap.clientWidth || 350;
@@ -547,7 +554,7 @@ function renderHistory() {
   const sorted = [...records].sort((a, b) => b.ym.localeCompare(a.ym));
   list.innerHTML = `<div class="list-wrapper">` + sorted.map(r => {
     const prev = sorted.find(x => x.ym < r.ym);
-    const diff = prev ? r.total - prev.total : null;
+    const diff = prev ? recordNet(r) - recordNet(prev) : null;
     const diffStr = diff !== null
       ? `<span style="color:${diff >= 0 ? '#30d158' : '#ff3b30'}">${diff >= 0 ? '+' : ''}NT$ ${formatAmount(diff)}</span>`
       : '';
@@ -558,7 +565,7 @@ function renderHistory() {
           <span class="item-sub">${diffStr || '無上月比較'}</span>
         </div>
         <div class="item-right">
-          <span class="item-amount">NT$ ${formatAmount(r.total)}</span>
+          <span class="item-amount">NT$ ${formatAmount(recordNet(r))}</span>
           <span class="item-chevron">›</span>
         </div>
       </div>
@@ -589,7 +596,7 @@ function openHistoryDetail(ym) {
 
     const shareCount = r.shares?.[a.id];
     let investHtml = '';
-    if (a.type === 'investment') {
+    if (isInvestType(a.type)) {
       if (shareCount) {
         investHtml += `
           <div class="card-row" style="margin-top:3px">
@@ -629,13 +636,17 @@ function openHistoryDetail(ym) {
     `;
   }).join('') + `
     <div class="card-row" style="padding:10px 0;border-bottom:${hasCardFees ? '1px solid var(--border)' : 'none'}">
-      <span style="font-size:16px;font-weight:700">存款總計</span>
+      <span style="font-size:16px;font-weight:700">資產總計</span>
       <span style="font-size:18px;font-weight:700;color:var(--accent)">NT$ ${formatAmount(r.total)}</span>
     </div>
     ${hasCardFees ? `
-    <div class="card-row" style="padding:10px 0;border-bottom:none">
+    <div class="card-row" style="padding:10px 0;border-bottom:1px solid var(--border)">
       <span style="font-size:16px;font-weight:700">信用卡費總計</span>
       <span style="font-size:18px;font-weight:700;color:#e65100">-NT$ ${formatAmount(r.totalCardFees)}</span>
+    </div>
+    <div class="card-row" style="padding:10px 0;border-bottom:none">
+      <span style="font-size:16px;font-weight:700">本月結餘</span>
+      <span style="font-size:18px;font-weight:700;color:var(--accent)">NT$ ${formatAmount(recordNet(r))}</span>
     </div>` : ''}
   `;
   if (r.note) {
